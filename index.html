@@ -1,452 +1,380 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CTA Report Helper – Prototype</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CTA Report Helper（テンプレ切替・スマホ最適化）</title>
   <style>
-    :root { --gap: 12px; }
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; padding: 16px; line-height: 1.6; }
-    h1 { font-size: 1.25rem; margin: 0 0 12px; }
-    h2 { margin: 18px 0 10px; font-size: 1.1rem; }
-    h3 { margin: 14px 0 8px; font-size: 1rem; }
-    .row { margin: 14px 0; }
-    .muted { color: #666; font-size: 0.9rem; }
-    .flex { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
-    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
-    button, select, input {
-      padding: 10px 12px; border: 1px solid #ddd; border-radius: 10px; background: #f7f7f7; cursor: pointer; font-size: 16px;
-    }
-    button:active { transform: scale(0.98); }
-    textarea { width: 100%; min-height: 220px; padding: 10px; border-radius: 10px; border: 1px solid #ddd; font-size: 15px; }
-    label { display: inline-flex; align-items: center; gap: 8px; }
-    .full { grid-column: 1 / -1; }
+    :root { --gap:12px; --fg:#111; --muted:#666; --border:#ddd; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+           margin: 16px; color: var(--fg); }
+    h1 { font-size: 22px; margin: 0 0 14px; }
+    .row { display:flex; gap: var(--gap); align-items:center; flex-wrap:wrap; }
+    .ctrl { height:40px; padding: 8px 12px; font-size:16px; }
+    select.ctrl, input.ctrl { border:1px solid var(--border); border-radius:8px; }
+    button.ctrl { background:#111; color:#fff; border:none; border-radius:8px; }
+    button.ghost { background:#fff; color:#111; border:1px solid var(--border); }
+    button:disabled { opacity:.6; }
+    .hint { color:var(--muted); font-size:13px; }
+    .section { margin: 16px 0; }
+    #preview { width:100%; height:260px; border:1px solid var(--border); border-radius:8px;
+               font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+               padding:12px; white-space:pre-wrap; }
+    textarea.ctrl { width: 320px; height: 120px; }
+    .grid { display:grid; grid-template-columns: 140px 1fr; gap:10px 12px; align-items:center; }
+    @media (max-width:560px){ .grid { grid-template-columns: 1fr; } textarea.ctrl{width:100%;} }
   </style>
 </head>
 <body>
   <h1>CTA Report Helper（テンプレ切替・スマホ最適化）</h1>
 
-  <!-- テンプレート選択 -->
-  <div class="row flex">
-    <label>テンプレート選択
-      <select id="template-select">
-        <option value="coronary_ct">冠動脈</option>
-        <option value="bypass_ct">バイパス</option>
-        <option value="laa_pv_ct">左心耳・肺静脈</option>
-        <option value="tavi_ct">TAVI</option>
-      </select>
-    </label>
-    <span class="muted">※選択するとテンプレートと候補語を読み込みます（同階層のJSONがあれば優先）</span>
+  <div class="row section">
+    <label for="tplSel">テンプレート選択</label>
+    <select id="tplSel" class="ctrl">
+      <option value="coronary_ct" selected>冠動脈</option>
+      <option value="bypass_ct">バイパス</option>
+      <option value="laa_pv_ct">左心耳・肺静脈</option>
+      <option value="tavi">TAVI</option>
+    </select>
+    <span class="hint">※選択するとテンプレートと候補語を読み込みます（同階層のJSONがあれば優先）</span>
   </div>
 
-  <!-- テンプレヘッダ（タイトル＋スコア欄） -->
-  <div id="template-header" class="row"></div>
-
-  <!-- セクション選択 -->
-  <div class="row flex" id="section-chooser" style="display:none;">
-    <label>セクション
-      <select id="section-select"></select>
-    </label>
-    <span class="muted">※このセクションのフィールドで1行を作成します</span>
+  <div class="row section">
+    <label for="scoreInput">スコア：</label>
+    <input id="scoreInput" class="ctrl" placeholder="例：450" />
   </div>
 
-  <!-- フィールド入力 -->
-  <div class="row" id="composer" style="display:none;">
-    <h3>所見入力</h3>
-    <div id="fields-grid" class="grid"></div>
-    <div class="row">
-      <button id="add-line">この内容で1行追加</button>
-      <span class="muted">整形：基本は半角スペース連結／特殊所見は（A, B）</span>
+  <div id="lesionArea" class="section">
+    <div class="grid">
+      <div>所見入力</div><div></div>
+
+      <label>枝</label>
+      <div class="row">
+        <select id="arterySel" class="ctrl"></select>
+        <input id="arteryFree" class="ctrl" placeholder="その他（手入力）" style="display:none; width:220px;" />
+      </div>
+
+      <label>狭窄率</label>
+      <select id="stenosisSel" class="ctrl" style="width:220px;"></select>
+
+      <label>プラーク</label>
+      <select id="plaqueSel" class="ctrl" style="width:220px;"></select>
+
+      <label>特殊所見</label>
+      <textarea id="specialArea" class="ctrl"
+        placeholder="複数ある場合は改行／カンマ区切りで入力（例：Positive remodeling, Spotty calcification）"></textarea>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <button id="addLineBtn" class="ctrl">この内容で1行追加</button>
+      <span class="hint">整形：基本は半角スペース連結／特殊所見は（A, B）</span>
     </div>
   </div>
 
-  <!-- 編集補助 -->
-  <div class="row">
-    <button id="newline">改行を追加</button>
-    <button id="undo">直前を取り消し</button>
-    <button id="clear">全消去（スコア含む）</button>
+  <div class="row section">
+    <button id="addBrBtn" class="ctrl ghost">改行を追加</button>
+    <button id="undoBtn" class="ctrl ghost">直前を取り消し</button>
+    <button id="clearAllBtn" class="ctrl ghost">全消去（スコア含む）</button>
   </div>
 
-  <!-- 出力 -->
-  <div class="row">
-    <h3>レポートプレビュー</h3>
-    <textarea id="output" readonly></textarea>
+  <div class="section">
+    <div id="preview" aria-label="レポートプレビュー"></div>
   </div>
 
-  <!-- 送出 -->
-  <div class="row flex">
-    <button id="copy">テキストをコピー</button>
-    <button id="open-mailto">メール作成（標準メーラー）</button>
-    <button id="open-gmail-app">Gmailアプリで作成（推奨）</button>
-    <button id="open-gmail-web">Gmail（ブラウザ）で作成</button>
-    <a id="mailto-link" href="#" class="muted" style="display:none;">mailtoデバッグ</a>
+  <div class="row section">
+    <button id="copyBtn" class="ctrl">テキストをコピー</button>
+    <button id="mailtoBtn" class="ctrl ghost">メール作成（標準メーラー）</button>
+    <button id="gmailAppBtn" class="ctrl ghost">Gmailアプリで作成（推奨）</button>
+    <button id="gmailWebBtn" class="ctrl ghost">Gmail（ブラウザ）で作成</button>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // ======= フォールバック（テンプレ定義） =======
-      const TPL_FALLBACKS = {
-        coronary_ct: {
-          template_id: "coronary_ct",
-          title: "＜冠動脈＞（担当技師：志賀）",
-          score_label: "石灰化スコア：",
-          sections: [
-            { name: "冠動脈所見", type: "lesion_list", fields: ["artery", "stenosis", "plaque", "special"] }
+    // -----------------------
+    // フォールバック・テンプレ定義（外部JSONが無い/壊れていても起動）
+    // -----------------------
+    const TPL_FALLBACKS = {
+      "coronary_ct": {
+        template_id: "coronary_ct",
+        meta: { title: "＜冠動脈＞（担当技師：志賀）", score_label: "石灰化スコア：", version: "v2" },
+        sections: [{
+          name: "冠動脈所見",
+          fields: [
+            { key: "artery",   label: "枝",
+              options: ["#1","#2","#3","#4PL","#4PD","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15","HL","PL","Sep","その他（手入力）"] },
+            { key: "stenosis", label: "狭窄率", options: ["0%","25%","50%","75%","90%","100%"] },
+            { key: "plaque",   label: "プラーク", options: ["正常","石灰化プラーク","非石灰化プラーク","混合プラーク"] },
+            { key: "special",  label: "特殊所見", multi:true,
+              options: ["Positive remodeling","Spotty calcification","Napkin-ring sign"] }
           ]
-        },
-        bypass_ct: {
-          template_id: "bypass_ct",
-          title: "＜冠動脈バイパス＞（担当技師：志賀）",
-          score_label: "石灰化スコア：",
-          sections: [
-            { name: "グラフト所見", type: "lesion_list", fields: ["graft_name", "patency", "anastomosis", "special"] }
+        }]
+      },
+      "bypass_ct": {
+        template_id: "bypass_ct",
+        meta: { title: "＜冠動脈バイパス＞（担当技師：志賀）", score_label: "石灰化スコア：", version: "v1" },
+        sections: [{
+          name: "CABG所見",
+          fields: [
+            { key: "graft",   label: "グラフト", options: ["（選択）","LITA","RITA","SVG","GEA","RA"] },
+            { key: "patency", label: "開存状態", options: ["（選択）","開存","狭窄","閉塞"] },
+            { key: "anast",   label: "吻合部",   options: ["（選択）","良好","不良","評価困難"] },
+            { key: "special", label: "特殊所見", multi:true,
+              options:["金属クリップ影響","motion artifact","評価困難"] }
           ]
-        },
-        laa_pv_ct: {
-          template_id: "laa_pv_ct",
-          title: "＜左心耳・肺静脈＞（担当技師：志賀）",
-          score_label: "心房容積比：",
-          sections: [
-            { name: "左心耳所見", type: "lesion_list", fields: ["laa_filling", "thrombus", "remark"] },
-            { name: "肺静脈所見", type: "lesion_list", fields: ["pv_branch", "stenosis", "flow", "remark"] }
+        }]
+      },
+      "laa_pv_ct": {
+        template_id: "laa_pv_ct",
+        meta: { title: "＜左心耳・肺静脈＞（担当技師：志賀）", score_label: "備考：", version: "v1" },
+        sections: [{
+          name: "所見",
+          fields: [
+            { key:"finding", label:"所見", options:["（選択）","左心耳血栓疑い","肺静脈狭窄疑い","異常所見なし"] },
+            { key:"special", label:"特殊所見", multi:true, options:["追加所見なし"] }
           ]
-        },
-        tavi_ct: {
-          template_id: "tavi_ct",
-          title: "＜TAVI前CT＞（担当技師：志賀）",
-          score_label: "大動脈弁輪径（平均径）：",
-          sections: [
-            { name: "大動脈弁所見", type: "lesion_list", fields: ["cusp_calcification", "annulus_diameter", "lvot", "remark"] },
-            { name: "アクセスルート", type: "lesion_list", fields: ["route_name", "vessel_diameter", "tortuosity", "calcification"] }
+        }]
+      },
+      "tavi": {
+        template_id: "tavi",
+        meta: { title: "＜TAVI計測＞（担当技師：志賀）", score_label: "備考：", version:"v1" },
+        sections: [{
+          name:"TAVI",
+          fields:[
+            { key:"finding", label:"所見", options:["（選択）","弁輪計測完了","石灰化強い","アクセス良好"] },
+            { key:"special", label:"特殊所見", multi:true, options:["注意所見なし"] }
           ]
-        }
-      };
-
-      // ======= フォールバック（候補語） =======
-      const DATA_FALLBACKS = {
-        coronary_ct: {
-          artery: ["#1","#2","#3","#4","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15"],
-          stenosis: ["25%","50%","75%","90%","99%","total occlusion"],
-          plaque: ["石灰化プラーク","非石灰化プラーク","混合プラーク","正常"],
-          special: ["Positive remodeling","spotty calcification","napkin-ring sign"]
-        },
-        bypass_ct: {
-          graft_name: ["LITA-LAD","RITA-RCA","SVG-OM","SVG-RCA"],
-          patency: ["開存","狭窄","閉塞"],
-          anastomosis: ["近位吻合良好","遠位吻合良好","吻合部狭窄あり"],
-          special: ["金属クリップ影響","motion artifact","評価困難"]
-        },
-        laa_pv_ct: {
-          laa_filling: ["充満良好","充満不良"],
-          thrombus: ["血栓疑いあり","血栓否定的","評価困難"],
-          remark: ["遅延相でも充満不良","心房細動リズム","なし"],
-          pv_branch: ["右上肺静脈","右下肺静脈","左上肺静脈","左下肺静脈"],
-          stenosis: ["なし","軽度","中等度","高度"],
-          flow: ["良好","遅延","逆流疑い"]
-        },
-        tavi_ct: {
-          cusp_calcification: ["軽度","中等度","高度"],
-          annulus_diameter: ["20mm","22mm","24mm","26mm"],
-          lvot: ["狭小","標準","広い"],
-          remark: ["楔入角で石灰化顕著","評価困難","なし"],
-          route_name: ["大腿動脈右","大腿動脈左","鎖骨下動脈右","鎖骨下動脈左"],
-          vessel_diameter: ["≥6mm","≥7mm","≥8mm"],
-          tortuosity: ["軽度","中等度","高度"],
-          calcification: ["少量","中等量","高度"]
-        }
-      };
-
-      // ======= 要素参照 =======
-      const tmplSelect = document.getElementById('template-select');
-      const headerArea = document.getElementById('template-header');
-      const sectionWrap = document.getElementById('section-chooser');
-      const sectionChooser = document.getElementById('section-select');
-      const composer = document.getElementById('composer');
-      const fieldsGrid = document.getElementById('fields-grid');
-      const outEl = document.getElementById('output');
-      const mailtoLink = document.getElementById('mailto-link');
-
-      // 出力管理：0番目にヘッダ（タイトル＋スコア）、以降に行を積む
-      const output = [];
-      let currentTemplate = null;
-      let currentData = null;
-      let currentLesionSections = [];
-      let currentSectionIndex = 0;
-
-      // ======= メール関連ユーティリティ =======
-      const mailSubject = 'CTA Report';
-
-      const getBodyEncoded = () => encodeURIComponent(
-        (outEl?.value || '')
-          .replace(/\r\n/g, '\n')
-          .replace(/\n/g, '\r\n') // iOS/Gmail互換のCRLF
-      );
-
-      const buildMailtoHref = () =>
-        `mailto:?subject=${encodeURIComponent(mailSubject)}&body=${getBodyEncoded()}`;
-
-      const buildGmailWebHref = () =>
-        `https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=1&su=${encodeURIComponent(mailSubject)}&body=${getBodyEncoded()}`;
-
-      const buildGmailAppHref = (scheme) =>
-        `${scheme}://co?subject=${encodeURIComponent(mailSubject)}&body=${getBodyEncoded()}`;
-
-      function openGmailSmart() {
-        const app1 = buildGmailAppHref('googlegmail'); // 旧
-        const app2 = buildGmailAppHref('gmail');       // 新
-        const web  = buildGmailWebHref();
-
-        window.location.href = app1;
-        setTimeout(() => {
-          if (document.visibilityState === 'hidden') return;
-          window.location.href = app2;
-          setTimeout(() => {
-            if (document.visibilityState === 'hidden') return;
-            window.location.href = web;
-          }, 700);
-        }, 700);
+        }]
       }
+    };
 
-      // ======= 共通レンダリング =======
-      const updateLinks = () => { mailtoLink.href = buildMailtoHref(); };
-      const render = () => { outEl.value = output.join('\n'); updateLinks(); };
-      const resetOutput = () => { output.length = 0; render(); };
+    // -----------------------
+    // 状態
+    // -----------------------
+    let currentTemplate = null;   // 読み込んだテンプレ
+    let currentData = { saved: [], candidates: {} }; // data_*.json
+    let outputLines = [];         // ユーザー追加行
+    let outputText = "";          // プレビュー文字列
 
-      // ========== fetch helper ==========
-      async function loadJson(path, fallback) {
-        try {
-          const res = await fetch(path, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`status ${res.status}`);
-          return await res.json();
-        } catch (e) {
-          console.warn(`${path} 読み込み失敗 → フォールバック使用`, e);
-          return fallback;
-        }
+    // -----------------------
+    // 汎用：JSON読込（404許容・フォールバック対応）
+    // -----------------------
+    async function loadJson(path, fallbackObj=null) {
+      try {
+        const res = await fetch(path, { cache: "no-store" });
+        if (!res.ok) throw new Error(`fetch ${path} -> ${res.status}`);
+        return await res.json();
+      } catch (e) {
+        if (fallbackObj!==null) return structuredClone(fallbackObj);
+        throw e;
       }
+    }
 
-      // ========== テンプレ読み込み ==========
-      async function loadTemplateById(tid) {
-        const path = `template_${tid.replace('_ct','')}.json`; // coronary_ct -> template_coronary.json
-        const tplFallback = TPL_FALLBACKS[tid] || TPL_FALLBACKS['coronary_ct'];
-        currentTemplate = await loadJson(path, tplFallback);
-        renderHeader();
-        prepareLesionSections();
-        await loadDataById(tid);
-        buildComposer();
-        resetOutput();
-        injectHeaderToOutput(); // ヘッダは常に先頭へ
+    // -----------------------
+    // テンプレ読み込み
+    // -----------------------
+    async function loadTemplateById(tid) {
+      const filename =
+        tid === "coronary_ct" ? "template_coronary.json" :
+        tid === "bypass_ct"   ? "template_bypass.json"   :
+        tid === "laa_pv_ct"   ? "template_laa_pv.json"   :
+        tid === "tavi"        ? "tamplate_tavi.json"     : // 既存の綴りに合わせてあります
+                                `template_${tid}.json`;
+
+      const tplFallback = TPL_FALLBACKS[tid] || TPL_FALLBACKS["coronary_ct"];
+      currentTemplate = await loadJson(filename, tplFallback);
+
+      // ヘッダを初期注入（undefinedガード）
+      injectHeaderToOutput();
+
+      // 候補UIの準備
+      prepareLesionSections();
+
+      // 付随データ読み込み（404でも続行）
+      await loadDataById(tid);
+
+      // プレビュー再描画
+      renderOutput();
+    }
+
+    // -----------------------
+    // 付随データ読み込み（404許容）
+    // -----------------------
+    async function loadDataById(tid) {
+      const path =
+        tid === "coronary_ct" ? "data_coronary_ct.json" :
+        tid === "bypass_ct"   ? "data_bypass_ct.json"   :
+        tid === "laa_pv_ct"   ? "data_laa_pv_ct.json"   :
+                                `data_${tid}.json`;
+      try {
+        currentData = await loadJson(path, { saved: [], candidates: {} });
+      } catch(e) {
+        currentData = { saved: [], candidates: {} };
       }
+    }
 
-      function renderHeader() {
-        headerArea.innerHTML = '';
-        const h2 = document.createElement('h2');
-        h2.textContent = currentTemplate.title;
-        headerArea.appendChild(h2);
+    // -----------------------
+    // ヘッダ注入（undefined防止）
+    // -----------------------
+    function injectHeaderToOutput() {
+      const title = currentTemplate?.meta?.title || "＜冠動脈＞（担当技師：）";
+      const scoreLabel = currentTemplate?.meta?.score_label || "スコア：";
+      outputLines = []; // テンプレ切替で本文はクリア
+      outputText = `${title}\n${scoreLabel}\n`;
+      renderOutput();
+    }
 
-        const wrap = document.createElement('div');
-        wrap.className = 'flex';
+    function renderOutput() {
+      const body = outputLines.join("\n");
+      const text = outputText + body;
+      document.getElementById("preview").textContent = text || "";
+    }
 
-        const label = document.createElement('label');
-        label.textContent = currentTemplate.score_label || 'スコア：';
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.id = 'score-input';
-        input.placeholder = '例：450';
-        input.style.marginLeft = '8px';
-        input.addEventListener('input', injectHeaderToOutput);
-        label.appendChild(input);
+    // -----------------------
+    // UI 構築
+    // -----------------------
+    function prepareLesionSections() {
+      // 対象テンプレの最初のセクションを使う（冠動脈ほかシンプル想定）
+      const sec = currentTemplate?.sections?.[0] || {fields:[]};
 
-        wrap.appendChild(label);
-        headerArea.appendChild(wrap);
-      }
+      const arterySel   = document.getElementById("arterySel");
+      const arteryFree  = document.getElementById("arteryFree");
+      const stenosisSel = document.getElementById("stenosisSel");
+      const plaqueSel   = document.getElementById("plaqueSel");
+      const specialArea = document.getElementById("specialArea");
 
-      function injectHeaderToOutput() {
-        const scoreVal = (document.getElementById('score-input')?.value || '');
-        const headerText = `${currentTemplate.title}\n${currentTemplate.score_label || 'スコア：'}${scoreVal}`;
-        output[0] = headerText;
-        render();
-      }
-
-      // ========== セクション準備 ==========
-      function prepareLesionSections() {
-        currentLesionSections = (currentTemplate.sections || []).filter(s => s.type === 'lesion_list');
-        if (currentLesionSections.length === 0) {
-          sectionWrap.style.display = 'none';
-          composer.style.display = 'none';
-          return;
-        }
-        sectionWrap.style.display = currentLesionSections.length > 1 ? 'flex' : 'none';
-        sectionChooser.replaceChildren();
-        currentLesionSections.forEach((s, idx) => {
-          const opt = document.createElement('option');
-          opt.value = String(idx);
-          opt.textContent = s.name || `セクション${idx+1}`;
-          sectionChooser.appendChild(opt);
-        });
-        currentSectionIndex = 0;
-        sectionChooser.value = '0';
-        sectionChooser.onchange = () => { currentSectionIndex = Number(sectionChooser.value); buildComposer(); };
-      }
-
-      // ========== データ読み込み ==========
-      async function loadDataById(tid) {
-        const path = `data_${tid}.json`; // 例：data_coronary_ct.json
-        const fallback = DATA_FALLBACKS[tid] || DATA_FALLBACKS['coronary_ct'];
-        currentData = await loadJson(path, fallback);
-      }
-
-      // ========== フィールドUI構築 ==========
-      function buildComposer() {
-        if (!currentLesionSections || currentLesionSections.length === 0) {
-          composer.style.display = 'none';
-          return;
-        }
-        composer.style.display = 'block';
-        fieldsGrid.replaceChildren();
-
-        const sec = currentLesionSections[currentSectionIndex];
-        const fields = sec.fields || [];
-
-        fields.forEach((fieldKey) => {
-          const wrap = document.createElement('label');
-          wrap.className = 'full';
-          wrap.textContent = fieldLabel(fieldKey) + ' ';
-          const isMulti = fieldKey === 'special';
-          const sel = document.createElement('select');
-          sel.id = `field-${fieldKey}`;
-          if (isMulti) { sel.multiple = true; sel.size = 4; }
-          const candidates = Array.isArray(currentData[fieldKey]) ? currentData[fieldKey] : [];
-          fillSelect(sel, candidates, !isMulti);
-          wrap.appendChild(sel);
-          fieldsGrid.appendChild(wrap);
-        });
-      }
-
-      function fieldLabel(key) {
-        const map = {
-          artery: '枝', stenosis: '狭窄率', plaque: 'プラーク', special: '特殊所見',
-          graft_name: 'グラフト', patency: '開存状態', anastomosis: '吻合部',
-          laa_filling: '左心耳充満', thrombus: '血栓所見', remark: '備考',
-          pv_branch: '肺静脈枝', flow: '血流',
-          cusp_calcification: '弁尖石灰化', annulus_diameter: '弁輪径', lvot: 'LVOT',
-          route_name: 'アプローチ', vessel_diameter: '血管径', tortuosity: '蛇行', calcification: '石灰化'
-        };
-        return map[key] || key;
-      }
-
-      function fillSelect(sel, items, includeEmpty=false) {
-        sel.replaceChildren();
-        if (includeEmpty) {
-          const opt = document.createElement('option');
-          opt.value = '';
-          opt.textContent = '（選択）';
+      // セレクト初期化
+      function fillSelect(sel, opts) {
+        sel.innerHTML = "";
+        for (const o of opts) {
+          const opt = document.createElement("option");
+          opt.value = o; opt.textContent = o;
           sel.appendChild(opt);
         }
-        items.forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v; opt.textContent = v;
-          sel.appendChild(opt);
-        });
       }
 
-      // ========== 行生成 ==========
-      function composeLine() {
-        const sec = currentLesionSections[currentSectionIndex];
-        const fields = sec.fields || [];
-        const tokens = [];
+      const fArtery   = sec.fields.find(f=>f.key==="artery")   || { options:["（選択）"] };
+      const fStenosis = sec.fields.find(f=>f.key==="stenosis") || { options:["（選択）"] };
+      const fPlaque   = sec.fields.find(f=>f.key==="plaque")   || { options:["（選択）"] };
+      const fSpecial  = sec.fields.find(f=>f.key==="special")  || { options:[], multi:true };
 
-        const values = fields.map(key => {
-          const el = document.getElementById(`field-${key}`);
-          if (!el) return '';
-          if (key === 'special') {
-            return Array.from(el.selectedOptions).map(o => o.value);
-          } else {
-            return el.value || '';
-          }
-        });
+      // 候補リスト
+      fillSelect(arterySel,   fArtery.options);
+      fillSelect(stenosisSel, fStenosis.options);
+      fillSelect(plaqueSel,   fPlaque.options);
+      specialArea.value = fSpecial.options.join("\n");
 
-        if (fields.length > 0) {
-          const firstKey = fields[0];
-          const firstVal = Array.isArray(values[0]) ? values[0].join(', ') : values[0];
-
-          if (firstKey === 'artery' && firstVal) {
-            tokens.push(`${firstVal}：`);
-            for (let i = 1; i < fields.length; i++) {
-              const key = fields[i];
-              const val = values[i];
-              if (!val || (Array.isArray(val) && val.length === 0)) continue;
-              if (key === 'special') {
-                tokens.push(`（${val.join(', ')}）`);
-              } else {
-                tokens.push(typeof val === 'string' ? val : String(val));
-              }
-            }
-          } else {
-            for (let i = 0; i < fields.length; i++) {
-              const key = fields[i];
-              const val = values[i];
-              if (!val || (Array.isArray(val) && val.length === 0)) continue;
-              if (key === 'special') {
-                tokens.push(`（${val.join(', ')}）`);
-              } else {
-                tokens.push(typeof val === 'string' ? val : String(val));
-              }
-            }
-          }
-        }
-
-        return tokens.join(' ').replace(/\s+（/g, '（');
+      // 「その他（手入力）」切替
+      function toggleArteryFree() {
+        const v = arterySel.value;
+        const show = (v === "その他（手入力）");
+        arteryFree.style.display = show ? "inline-block" : "none";
+        if (!show) arteryFree.value = "";
       }
+      arterySel.onchange = toggleArteryFree;
+      toggleArteryFree();
+    }
 
-      // ========== ボタン動作 ==========
-      document.getElementById('add-line').addEventListener('click', () => {
-        const line = composeLine();
-        if (!line) return;
-        if (output.length === 0) injectHeaderToOutput();
-        output.push(line);
-        render();
-      });
+    // -----------------------
+    // 行追加／操作
+    // -----------------------
+    function getSpecialsText(raw) {
+      // 改行 or カンマ区切り → トリムして重複排除 → （A, B）
+      const parts = raw.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
+      const uniq = [...new Set(parts)];
+      return uniq.length ? `（${uniq.join(", ")}）` : "";
+    }
 
-      document.getElementById('newline').addEventListener('click', () => { output.push(''); render(); });
-      document.getElementById('undo').addEventListener('click', () => { output.pop(); render(); });
+    document.getElementById("addLineBtn").onclick = () => {
+      const arterySel   = document.getElementById("arterySel");
+      const arteryFree  = document.getElementById("arteryFree");
+      const stenosisSel = document.getElementById("stenosisSel");
+      const plaqueSel   = document.getElementById("plaqueSel");
+      const specialArea = document.getElementById("specialArea");
 
-      // 全消去：スコア欄もクリアしてヘッダ再注入
-      document.getElementById('clear').addEventListener('click', () => {
-        const scoreInput = document.getElementById('score-input');
-        if (scoreInput) scoreInput.value = '';
-        resetOutput();
-        injectHeaderToOutput();
-      });
+      const a = (arterySel.value === "その他（手入力）" ? (arteryFree.value || "不明") : arterySel.value || "");
+      const s = stenosisSel.value || "";
+      const p = plaqueSel.value || "";
+      const sp = getSpecialsText(specialArea.value);
 
-      // クリップボード
-      document.getElementById('copy').addEventListener('click', async () => {
-        try { await navigator.clipboard.writeText(outEl.value); alert('コピーしました'); }
-        catch { outEl.select(); alert('コピーに失敗。右クリック→コピーをご利用ください。'); }
-      });
+      // ver.1の仕様：自動文章整形なし、半角スペース結合＋特殊所見は（…）
+      const line = `${a}： ${s} ${p}${sp}`.trim();
+      if (line) outputLines.push(line);
+      renderOutput();
+    };
 
-      // メール関連
-      document.getElementById('open-mailto').addEventListener('click', () => {
-        window.location.href = buildMailtoHref();
-      });
-      document.getElementById('open-gmail-app').addEventListener('click', () => {
-        openGmailSmart();
-      });
-      document.getElementById('open-gmail-web').addEventListener('click', () => {
-        window.location.href = buildGmailWebHref();
-      });
+    document.getElementById("addBrBtn").onclick = () => {
+      outputLines.push("");
+      renderOutput();
+    };
 
-      // テンプレ切替
-      document.getElementById('template-select').addEventListener('change', async (e) => {
-        await loadTemplateById(e.target.value);
-      });
+    document.getElementById("undoBtn").onclick = () => {
+      outputLines.pop();
+      renderOutput();
+    };
 
-      // 初期化
-      (async function init() {
-        await loadTemplateById('coronary_ct');
-        document.getElementById('template-select').value = 'coronary_ct';
-      })();
-    });
+    document.getElementById("clearAllBtn").onclick = () => {
+      injectHeaderToOutput();
+      document.getElementById("scoreInput").value = "";
+    };
+
+    // スコア反映：ヘッダ2行目に常に置く
+    document.getElementById("scoreInput").oninput = (e) => {
+      const scoreLabel = currentTemplate?.meta?.score_label || "スコア：";
+      // 先頭2行を作り直し
+      const title = currentTemplate?.meta?.title || "＜冠動脈＞（担当技師：）";
+      const val = (e.target.value || "").trim();
+      outputText = `${title}\n${scoreLabel}${val ? val : ""}\n`;
+      renderOutput();
+    };
+
+    // -----------------------
+    // メール作成
+    // -----------------------
+    function getMailBody() {
+      return document.getElementById("preview").textContent || "";
+    }
+
+    document.getElementById("mailtoBtn").onclick = () => {
+      const body = encodeURIComponent(getMailBody());
+      const url = `mailto:?subject=${encodeURIComponent("CTA所見")}&body=${body}`;
+      location.href = url;
+    };
+
+    // iOS/AndroidのGmailアプリ
+    document.getElementById("gmailAppBtn").onclick = () => {
+      const body = encodeURIComponent(getMailBody());
+      // Gmail アプリ URL スキーム（iOS/Android共通）
+      const url = `googlegmail:///co?to=&subject=${encodeURIComponent("CTA所見")}&body=${body}`;
+      location.href = url;
+    };
+
+    // ブラウザでGmail
+    document.getElementById("gmailWebBtn").onclick = () => {
+      const body = encodeURIComponent(getMailBody());
+      const url = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=&su=${encodeURIComponent("CTA所見")}&body=${body}`;
+      window.open(url, "_blank");
+    };
+
+    // クリップボード
+    document.getElementById("copyBtn").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(getMailBody());
+        alert("コピーしました");
+      } catch {
+        alert("コピーに失敗しました（ブラウザの権限をご確認ください）");
+      }
+    };
+
+    // -----------------------
+    // 初期化
+    // -----------------------
+    document.getElementById("tplSel").onchange = async (e) => {
+      await loadTemplateById(e.target.value);
+    };
+
+    // 最初は冠動脈を読み込む
+    (async () => {
+      await loadTemplateById("coronary_ct");
+    })();
   </script>
 </body>
 </html>

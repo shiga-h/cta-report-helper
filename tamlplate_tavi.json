@@ -1,0 +1,17 @@
+{
+  "template_id": "tavi_ct",
+  "title": "＜TAVI前CT＞（担当技師：志賀）",
+  "score_label": "大動脈弁輪径（平均径）：",
+  "sections": [
+    {
+      "name": "大動脈弁所見",
+      "type": "lesion_list",
+      "fields": ["cusp_calcification", "annulus_diameter", "lvot", "remark"]
+    },
+    {
+      "name": "アクセスルート",
+      "type": "lesion_list",
+      "fields": ["route_name", "vessel_diameter", "tortuosity", "calcification"]
+    }
+  ]
+}

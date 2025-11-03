@@ -1,0 +1,17 @@
+{
+  "template_id": "coronary_ct",
+  "title": "＜冠動脈＞（担当技師：志賀）",
+  "score_label": "石灰化スコア：",
+  "sections": [
+    {
+      "name": "冠動脈所見",
+      "type": "lesion_list",
+      "fields": ["artery", "stenosis", "plaque", "special"]
+    },
+    {
+      "name": "その他",
+      "type": "fixed_text",
+      "text": "動脈相において左心耳に造影欠損像を認めます。遅延相においても造影みられず、左心耳血栓を否定できません。"
+    }
+  ]
+}

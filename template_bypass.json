@@ -1,0 +1,17 @@
+{
+  "template_id": "bypass_ct",
+  "title": "＜冠動脈バイパス＞（担当技師：志賀）",
+  "score_label": "石灰化スコア：",
+  "sections": [
+    {
+      "name": "グラフト所見",
+      "type": "lesion_list",
+      "fields": ["graft_name", "patency", "anastomosis", "special"]
+    },
+    {
+      "name": "その他",
+      "type": "fixed_text",
+      "text": "吻合部や末梢の評価に制限あり。金属クリップやモーションアーチファクトの影響を受けています。"
+    }
+  ]
+}

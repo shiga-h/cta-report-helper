@@ -1,0 +1,17 @@
+{
+  "template_id": "laa_pv_ct",
+  "title": "＜左心耳・肺静脈＞（担当技師：志賀）",
+  "score_label": "心房容積比：",
+  "sections": [
+    {
+      "name": "左心耳所見",
+      "type": "lesion_list",
+      "fields": ["laa_filling", "thrombus", "remark"]
+    },
+    {
+      "name": "肺静脈所見",
+      "type": "lesion_list",
+      "fields": ["pv_branch", "stenosis", "flow", "remark"]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CTA Report Helper（CTOスコア対応）</title>
+  <title>CTA Report Helper（CTOスコア対応＋特殊所見チェック式）</title>
   <style>
     :root { --gap:12px; --fg:#111; --muted:#666; --border:#ddd; --pill:#f5f5f5; }
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -20,22 +20,22 @@
     #preview { width:100%; height:280px; border:1px solid var(--border); border-radius:8px;
                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
                padding:12px; white-space:pre-wrap; }
-    textarea.ctrl { width: 320px; height: 120px; }
     .grid { display:grid; grid-template-columns: 140px 1fr; gap:10px 12px; align-items:center; }
     fieldset { border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
     legend { padding:0 6px; color:#333; font-weight:600; }
     .pill { padding:3px 8px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
     .scoreBadge { padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:#fff; font-weight:600; }
+    .checklist { display:flex; flex-wrap:wrap; gap:8px; }
+    .checkItem { padding:5px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; cursor:pointer; user-select:none; }
+    .checkItem.active { background:#007bff; color:#fff; border-color:#007bff; }
     @media (max-width:560px){
       .grid { grid-template-columns: 1fr; }
-      textarea.ctrl{width:100%;}
     }
   </style>
 </head>
 <body>
-  <h1>CTA Report Helper（CTOスコア対応）</h1>
+  <h1>CTA Report Helper（CTOスコア対応＋特殊所見チェック式）</h1>
 
-  <!-- テンプレ選択 / スコア -->
   <div class="row section">
     <label for="tplSel">テンプレート選択</label>
     <select id="tplSel" class="ctrl">
@@ -44,7 +44,6 @@
       <option value="laa_pv_ct">左心耳・肺静脈</option>
       <option value="tavi">TAVI</option>
     </select>
-    <span class="hint">※同階層にあるJSON（template_*.json / data_*.json）があれば優先して読み込みます</span>
   </div>
 
   <div class="row section">
@@ -52,11 +51,9 @@
     <input id="scoreInput" class="ctrl" placeholder="例：450" />
   </div>
 
-  <!-- 冠動脈 所見入力（既存のver.1方式：半角スペース連結） -->
+  <!-- 所見入力 -->
   <div id="lesionArea" class="section">
     <div class="grid">
-      <div>所見入力</div><div></div>
-
       <label>枝</label>
       <div class="row">
         <select id="arterySel" class="ctrl"></select>
@@ -70,17 +67,16 @@
       <select id="plaqueSel" class="ctrl" style="width:220px;"></select>
 
       <label>特殊所見</label>
-      <textarea id="specialArea" class="ctrl"
-        placeholder="複数ある場合は改行／カンマ区切り（例：Positive remodeling, Spotty calcification）"></textarea>
+      <div id="specialChecks" class="checklist"></div>
     </div>
 
     <div class="row" style="margin-top:10px;">
       <button id="addLineBtn" class="ctrl">この内容で1行追加</button>
-      <span class="hint">整形：半角スペース結合／特殊所見は（A, B）</span>
+      <span class="hint">特殊所見はクリックでON/OFF選択できます</span>
     </div>
   </div>
 
-  <!-- CTO（スコア算出のみ。文章生成なし） -->
+  <!-- CTO -->
   <div class="row section">
     <span class="pill"><label><input type="checkbox" id="ctoToggle" /> CTO症例</label></span>
     <span id="jctoBadge" class="scoreBadge" style="display:none;">J-CTO: 0点（Easy）</span>
@@ -88,340 +84,108 @@
 
   <div id="ctoBlock" class="section" style="display:none;">
     <fieldset>
-      <legend>CTO（J-CTOスコア算出＋α）※文章生成はしません</legend>
+      <legend>CTO（J-CTOスコア算出＋α）</legend>
       <div class="grid">
-        <label>蛇行（tortuosity）</label>
+        <label>蛇行</label>
         <select id="ctoBend" class="ctrl">
-          <option value="none">≤45°（なし/軽度）</option>
+          <option value="none">≤45°</option>
           <option value="gt45">&gt;45°</option>
         </select>
-
         <label>石灰化</label>
         <select id="ctoCalc" class="ctrl">
           <option value="none">なし/軽度</option>
           <option value="present">あり</option>
         </select>
-
-        <label>入口部（stump）</label>
+        <label>入口部</label>
         <select id="ctoStump" class="ctrl">
-          <option value="tapered">tapered stump</option>
-          <option value="blunt">blunt stump</option>
+          <option value="tapered">tapered</option>
+          <option value="blunt">blunt</option>
         </select>
-
         <label>閉塞長</label>
         <select id="ctoLen" class="ctrl">
-          <option value="<20">&lt;20 mm</option>
-          <option value=">=20">≥20 mm</option>
+          <option value="<20">&lt;20mm</option>
+          <option value=">=20">≥20mm</option>
         </select>
-
-        <label>既治療歴（failed attempt）</label>
+        <label>既治療歴</label>
         <select id="ctoPrior" class="ctrl">
           <option value="no">なし</option>
           <option value="yes">あり</option>
         </select>
-
-        <!-- α：スコアには加点しない -->
-        <label>側枝（α）</label>
-        <select id="ctoColl" class="ctrl">
-          <option value="good">側枝良好</option>
-          <option value="poor">側枝乏しい</option>
-        </select>
-
-        <label>補足（任意）</label>
-        <input id="ctoNote" class="ctrl" placeholder="例：microchannelあり（スコアには影響なし）" />
       </div>
-
       <div class="row" style="margin-top:10px;">
         <button id="addJCTOScoreBtn" class="ctrl">J-CTOスコアを1行追加</button>
-        <span class="hint">追加されるのは「J-CTO X点（Grade）」のみです（文章生成はしません）</span>
       </div>
     </fieldset>
   </div>
 
-  <!-- 共通操作 -->
-  <div class="row section">
-    <button id="addBrBtn" class="ctrl ghost">改行を追加</button>
-    <button id="undoBtn" class="ctrl ghost">直前を取り消し</button>
-    <button id="clearAllBtn" class="ctrl ghost">全消去（スコア含む）</button>
-  </div>
-
-  <!-- プレビュー -->
   <div class="section">
-    <div id="preview" aria-label="レポートプレビュー"></div>
+    <button id="copyBtn" class="ctrl">コピー</button>
+    <button id="mailtoBtn" class="ctrl ghost">メール作成</button>
   </div>
 
-  <!-- 送付系 -->
-  <div class="row section">
-    <button id="copyBtn" class="ctrl">テキストをコピー</button>
-    <button id="mailtoBtn" class="ctrl ghost">メール作成（標準メーラー）</button>
-    <button id="gmailAppBtn" class="ctrl ghost">Gmailアプリで作成</button>
-    <button id="gmailWebBtn" class="ctrl ghost">Gmail（ブラウザ）で作成</button>
+  <div class="section">
+    <div id="preview"></div>
   </div>
 
   <script>
-    // ===== フォールバック（外部JSONが無くても動く） =====
     const TPL_FALLBACKS = {
       "coronary_ct": {
-        template_id: "coronary_ct",
-        meta: { title: "＜冠動脈＞（担当技師：志賀）", score_label: "石灰化スコア：", version: "v3" },
-        sections: [{
-          name: "冠動脈所見",
-          fields: [
-            { key: "artery", label: "枝",
-              options: ["#1","#2","#3","#4PL","#4PD","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15","HL","PL","Sep","その他（手入力）"] },
-            { key: "stenosis", label: "狭窄率",
-              options: ["25%","25-50%","50%","50-75%","75%","75-90%","90%","99%","99-100%","100%"] },
-            { key: "plaque", label: "プラーク",
-              options: ["非石灰化プラーク","混合プラーク","石灰化プラーク","石灰化プラークあり"] },
-            { key: "special", label: "特殊所見", multi:true,
-              options: ["Positive remodeling","Spotty calcification","Napkin-ring sign","Low attenuation plaque",
-                        "Myocardial bridge(+)","モーションアーチファクトのため正確な内腔評価困難です。","血管径1.5mm以下のため正確な内腔評価困難です。"] }
-          ]
-        }]
-      },
-      "bypass_ct": {
-        template_id: "bypass_ct",
-        meta: { title: "＜冠動脈バイパス＞（担当技師：志賀）", score_label: "石灰化スコア：", version:"v1" },
-        sections: [{
-          name:"CABG所見",
+        meta:{title:"＜冠動脈＞（担当技師：志賀）",score_label:"石灰化スコア："},
+        sections:[{
           fields:[
-            { key:"graft", label:"グラフト", options:["（選択）","LITA","RITA","SVG","GEA","RA"] },
-            { key:"patency", label:"開存状態", options:["（選択）","開存","狭窄","閉塞"] },
-            { key:"anast", label:"吻合部", options:["（選択）","良好","不良","評価困難"] },
-            { key:"special", label:"特殊所見", multi:true, options:["金属クリップ影響","motion artifact","評価困難"] }
+            {key:"artery",options:["#1","#2","#3","#4PL","#4PD","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15","HL","PL","Sep","その他（手入力）"]},
+            {key:"stenosis",options:["25%","25-50%","50%","50-75%","75%","75-90%","90%","99%","99-100%","100%"]},
+            {key:"plaque",options:["非石灰化プラーク","混合プラーク","石灰化プラーク","石灰化プラークあり"]},
+            {key:"special",options:["Positive remodeling","Spotty calcification","Napkin-ring sign","Low attenuation plaque","Myocardial bridge(+)","モーションアーチファクトのため正確な内腔評価困難です。","血管径1.5mm以下のため正確な内腔評価困難です。"]}
           ]
         }]
-      },
-      "laa_pv_ct": {
-        template_id: "laa_pv_ct",
-        meta: { title: "＜左心耳・肺静脈＞（担当技師：志賀）", score_label: "備考：", version:"v1" },
-        sections:[{ name:"所見", fields:[
-          {key:"finding", label:"所見", options:["（選択）","左心耳血栓疑い","肺静脈狭窄疑い","異常所見なし"]},
-          {key:"special", label:"特殊所見", multi:true, options:["追加所見なし"]}
-        ]}]
-      },
-      "tavi": {
-        template_id: "tavi",
-        meta: { title: "＜TAVI計測＞（担当技師：志賀）", score_label: "備考：", version:"v1" },
-        sections:[{ name:"TAVI", fields:[
-          {key:"finding", label:"所見", options:["（選択）","弁輪計測完了","石灰化強い","アクセス良好"]},
-          {key:"special", label:"特殊所見", multi:true, options:["注意所見なし"]}
-        ]}]
       }
     };
 
-    // ===== 状態 =====
-    let currentTemplate = null;
-    let currentData = { saved: [], candidates: {} };
-    let outputLines = [];
-    let outputText = "";
+    let outputLines=[], outputText="";
 
-    // ===== JSON読込（404許容） =====
-    async function loadJson(path, fallbackObj=null) {
-      try {
-        const res = await fetch(path, { cache: "no-store" });
-        if (!res.ok) throw new Error(`fetch ${path} -> ${res.status}`);
-        return await res.json();
-      } catch (e) {
-        if (fallbackObj!==null) return structuredClone(fallbackObj);
-        return fallbackObj; // nullならそのままnull
-      }
+    function fillSelect(sel,opts){ sel.innerHTML=""; opts.forEach(o=>{const op=document.createElement("option");op.textContent=o;op.value=o;sel.appendChild(op);});}
+
+    function prepareUI(){
+      const tpl=TPL_FALLBACKS["coronary_ct"].sections[0].fields;
+      fillSelect(arterySel,tpl[0].options);
+      fillSelect(stenosisSel,tpl[1].options);
+      fillSelect(plaqueSel,tpl[2].options);
+
+      const sDiv=document.getElementById("specialChecks");
+      sDiv.innerHTML="";
+      tpl[3].options.forEach(txt=>{
+        const d=document.createElement("div");
+        d.className="checkItem";
+        d.textContent=txt;
+        d.onclick=()=>d.classList.toggle("active");
+        sDiv.appendChild(d);
+      });
     }
 
-    // ===== テンプレ読み込み =====
-    async function loadTemplateById(tid) {
-      const filename =
-        tid === "coronary_ct" ? "template_coronary.json" :
-        tid === "bypass_ct"   ? "template_bypass.json"   :
-        tid === "laa_pv_ct"   ? "template_laa_pv.json"   :
-        tid === "tavi"        ? "tamplate_tavi.json"     : `template_${tid}.json`;
-
-      const tplFallback = TPL_FALLBACKS[tid] || TPL_FALLBACKS["coronary_ct"];
-      currentTemplate = await loadJson(filename, tplFallback);
-
-      injectHeaderToOutput();
-      prepareLesionSections();
-
-      await loadDataById(tid);
-      renderOutput();
-
-      // CTO UIの表示制御（冠動脈のみ有効）
-      document.getElementById("ctoToggle").checked = false;
-      document.getElementById("ctoBlock").style.display = "none";
-      document.getElementById("jctoBadge").style.display = (tid === "coronary_ct") ? "inline-block" : "none";
-      document.getElementById("jctoBadge").textContent = "J-CTO: 0点（Easy）";
-      document.getElementById("ctoToggle").disabled = (tid !== "coronary_ct");
+    function specialsSelected(){
+      return Array.from(document.querySelectorAll(".checkItem.active")).map(el=>el.textContent);
     }
 
-    async function loadDataById(tid) {
-      const path =
-        tid === "coronary_ct" ? "data_coronary_ct.json" :
-        tid === "bypass_ct"   ? "data_bypass_ct.json"   :
-        tid === "laa_pv_ct"   ? "data_laa_pv_ct.json"   :
-                                `data_${tid}.json`;
-      currentData = await loadJson(path, { saved: [], candidates: {} }) || { saved: [], candidates: {} };
+    function renderOutput(){
+      document.getElementById("preview").textContent=outputText+outputLines.join("\n");
     }
 
-    // ===== プレビュー描画 =====
-    function injectHeaderToOutput() {
-      const title = currentTemplate?.meta?.title || "＜冠動脈＞（担当技師：）";
-      const scoreLabel = currentTemplate?.meta?.score_label || "スコア：";
-      outputLines = [];
-      outputText = `${title}\n${scoreLabel}\n`;
-      renderOutput();
-    }
-    function renderOutput() {
-      const body = outputLines.join("\n");
-      document.getElementById("preview").textContent = outputText + body;
-    }
-
-    // ===== Lesion UI =====
-    function prepareLesionSections() {
-      const sec = currentTemplate?.sections?.[0] || {fields:[]};
-      const arterySel   = document.getElementById("arterySel");
-      const arteryFree  = document.getElementById("arteryFree");
-      const stenosisSel = document.getElementById("stenosisSel");
-      const plaqueSel   = document.getElementById("plaqueSel");
-      const specialArea = document.getElementById("specialArea");
-
-      function fillSelect(sel, opts) {
-        sel.innerHTML = "";
-        for (const o of opts) {
-          const opt = document.createElement("option");
-          opt.value = o; opt.textContent = o;
-          sel.appendChild(opt);
-        }
-      }
-
-      const fA = sec.fields.find(f=>f.key==="artery")   || { options:["（選択）"] };
-      const fS = sec.fields.find(f=>f.key==="stenosis") || { options:["（選択）"] };
-      const fP = sec.fields.find(f=>f.key==="plaque")   || { options:["（選択）"] };
-      const fX = sec.fields.find(f=>f.key==="special")  || { options:[], multi:true };
-
-      fillSelect(arterySel,   fA.options);
-      fillSelect(stenosisSel, fS.options);
-      fillSelect(plaqueSel,   fP.options);
-      specialArea.value = fX.options.join("\n");
-
-      function toggleArteryFree() {
-        const v = arterySel.value;
-        const show = (v === "その他（手入力）");
-        arteryFree.style.display = show ? "inline-block" : "none";
-        if (!show) arteryFree.value = "";
-      }
-      arterySel.onchange = toggleArteryFree;
-      toggleArteryFree();
-    }
-
-    // ===== 1行追加（ver.1：文章整形なし） =====
-    function specialsToParen(raw) {
-      const parts = raw.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
-      const uniq = [...new Set(parts)];
-      return uniq.length ? `（${uniq.join(", ")}）` : "";
-    }
-    document.getElementById("addLineBtn").onclick = () => {
-      const aSel = document.getElementById("arterySel");
-      const aFree= document.getElementById("arteryFree");
-      const sSel = document.getElementById("stenosisSel");
-      const pSel = document.getElementById("plaqueSel");
-      const spAr = document.getElementById("specialArea");
-
-      const a = (aSel.value === "その他（手入力）" ? (aFree.value || "不明") : aSel.value || "");
-      const s = sSel.value || "";
-      const p = pSel.value || "";
-      const sp = specialsToParen(spAr.value);
-
-      const line = `${a}： ${s} ${p}${sp}`.trim();
-      if (line) outputLines.push(line);
-      renderOutput();
+    addLineBtn.onclick=()=>{
+      const a=(arterySel.value==="その他（手入力）")?(arteryFree.value||"不明"):arterySel.value;
+      const s=stenosisSel.value, p=plaqueSel.value;
+      const sp=specialsSelected(); const spStr=sp.length?`（${sp.join(", ")}）`:"";
+      const line=`${a}： ${s} ${p}${spStr}`;
+      outputLines.push(line); renderOutput();
     };
 
-    // ===== CTO：スコア算出のみ（文章生成なし） =====
-    const ctoToggle = document.getElementById("ctoToggle");
-    const ctoBlock  = document.getElementById("ctoBlock");
-    const jctoBadge = document.getElementById("jctoBadge");
-    ctoToggle.addEventListener("change", ()=>{
-      const on = ctoToggle.checked;
-      ctoBlock.style.display = on ? "block" : "none";
-    });
+    copyBtn.onclick=async()=>{await navigator.clipboard.writeText(document.getElementById("preview").textContent);alert("コピーしました");};
+    mailtoBtn.onclick=()=>{location.href=`mailto:?subject=CTA所見&body=${encodeURIComponent(document.getElementById("preview").textContent)}`;};
 
-    function calcJCTOScore() {
-      const bend  = document.getElementById("ctoBend").value;
-      const calc  = document.getElementById("ctoCalc").value;
-      const stump = document.getElementById("ctoStump").value;
-      const len   = document.getElementById("ctoLen").value;
-      const prior = document.getElementById("ctoPrior").value;
-
-      let score = 0;
-      if (bend === "gt45") score += 1;
-      if (calc === "present") score += 1;
-      if (stump === "blunt") score += 1;
-      if (len === ">=20") score += 1;
-      if (prior === "yes") score += 1;
-
-      let grade = "Easy";
-      if (score === 1) grade = "Intermediate";
-      else if (score === 2) grade = "Difficult";
-      else if (score === 3) grade = "Very difficult";
-      else if (score >= 4) grade = "Extremely difficult";
-
-      return { score, grade };
-    }
-
-    function updateJCTOBadge() {
-      const {score, grade} = calcJCTOScore();
-      jctoBadge.textContent = `J-CTO: ${score}点（${grade}）`;
-    }
-
-    ["ctoBend","ctoCalc","ctoStump","ctoLen","ctoPrior","ctoColl","ctoNote"].forEach(id=>{
-      const el = document.getElementById(id);
-      if (el) el.addEventListener("change", updateJCTOBadge);
-      if (el) el.addEventListener("input",  updateJCTOBadge);
-    });
-
-    document.getElementById("addJCTOScoreBtn").onclick = ()=>{
-      const {score, grade} = calcJCTOScore();
-      outputLines.push(`J-CTO ${score}点（${grade}）`);
-      renderOutput();
-    };
-
-    // ===== 共通操作 =====
-    document.getElementById("addBrBtn").onclick = () => { outputLines.push(""); renderOutput(); };
-    document.getElementById("undoBtn").onclick  = () => { outputLines.pop(); renderOutput(); };
-    document.getElementById("clearAllBtn").onclick = () => {
-      injectHeaderToOutput(); document.getElementById("scoreInput").value = "";
-    };
-
-    document.getElementById("scoreInput").oninput = (e) => {
-      const scoreLabel = currentTemplate?.meta?.score_label || "スコア：";
-      const title = currentTemplate?.meta?.title || "＜冠動脈＞（担当技師：）";
-      const val = (e.target.value || "").trim();
-      outputText = `${title}\n${scoreLabel}${val ? val : ""}\n`;
-      renderOutput();
-    };
-
-    // ===== メール/コピー =====
-    const getBody = ()=> document.getElementById("preview").textContent || "";
-    document.getElementById("mailtoBtn").onclick = ()=>{
-      const url = `mailto:?subject=${encodeURIComponent("CTA所見")}&body=${encodeURIComponent(getBody())}`;
-      location.href = url;
-    };
-    document.getElementById("gmailAppBtn").onclick = ()=>{
-      const url = `googlegmail:///co?to=&subject=${encodeURIComponent("CTA所見")}&body=${encodeURIComponent(getBody())}`;
-      location.href = url;
-    };
-    document.getElementById("gmailWebBtn").onclick = ()=>{
-      const url = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=&su=${encodeURIComponent("CTA所見")}&body=${encodeURIComponent(getBody())}`;
-      window.open(url, "_blank");
-    };
-    document.getElementById("copyBtn").onclick = async ()=>{
-      try { await navigator.clipboard.writeText(getBody()); alert("コピーしました"); }
-      catch { alert("コピーに失敗しました（ブラウザの権限をご確認ください）"); }
-    };
-
-    // ===== 初期化 =====
-    document.getElementById("tplSel").onchange = async (e)=>{ await loadTemplateById(e.target.value); };
-    (async ()=>{ await loadTemplateById("coronary_ct"); updateJCTOBadge(); })();
+    (function init(){
+      outputText="＜冠動脈＞（担当技師：志賀）\n石灰化スコア：\n";
+      prepareUI(); renderOutput();
+    })();
   </script>
 </body>
 </html>

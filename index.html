@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CTA Report Helper（CTOスコア対応＋特殊所見“選択式”）</title>
+  <title>CTA Report Helper（特殊所見の括弧ルール対応）</title>
   <style>
     :root { --gap:12px; --fg:#111; --muted:#666; --border:#ddd; --pill:#f5f5f5; --brand:#0a66ff; }
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -30,7 +30,7 @@
     .checkItem {
       padding:8px 12px; border:1px solid var(--border); border-radius:999px;
       background:#fff; cursor:pointer; user-select:none; line-height:1;
-      touch-action: manipulation;  /* スマホの誤認識を避ける */
+      touch-action: manipulation;
     }
     .checkItem.active { background:var(--brand); color:#fff; border-color:var(--brand); }
     @media (max-width:560px){
@@ -39,7 +39,7 @@
   </style>
 </head>
 <body>
-  <h1>CTA Report Helper（CTOスコア対応＋特殊所見“選択式”）</h1>
+  <h1>CTA Report Helper（特殊所見の括弧ルール対応）</h1>
 
   <!-- テンプレ選択 / スコア -->
   <div class="row section">
@@ -50,7 +50,7 @@
       <option value="laa_pv_ct">左心耳・肺静脈</option>
       <option value="tavi">TAVI</option>
     </select>
-    <span class="hint">※同階層にある JSON（template_*.json / data_*.json）があれば優先読み込み</span>
+    <span class="hint">※同階層の JSON（template_*.json / data_*.json）があれば優先読み込み</span>
   </div>
 
   <div class="row section">
@@ -108,7 +108,7 @@
 
         <label>入口部</label>
         <select id="ctoStump" class="ctrl">
-          <option value="tapered">tapered stump</option>
+          <option value="tapered">tapered</option>
           <option value="blunt">blunt stump</option>
         </select>
 
@@ -168,14 +168,22 @@
           name: "冠動脈所見",
           fields: [
             { key: "artery", label: "枝",
-              options: ["#1","#2","#3","#4PL","#4PD","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15","HL","PL","Sep","その他（手入力）"] },
+              options: ["", "#1","#2","#3","#4PL","#4PD","#5","#6","#7","#8","#9","#10","#11","#12","#13","#14","#15","HL","PL","Sep","その他（手入力）"] },
             { key: "stenosis", label: "狭窄率",
-              options: ["25%","25-50%","50%","50-75%","75%","75-90%","90%","99%","99-100%","100%"] },
+              options: ["", "25%","25-50%","50%","50-75%","75%","75-90%","90%","99%","99-100%","100%"] },
             { key: "plaque", label: "プラーク",
-              options: ["非石灰化プラーク","混合プラーク","石灰化プラーク","石灰化プラークあり"] },
+              options: ["", "非石灰化プラーク","混合プラーク","石灰化プラーク","石灰化プラークあり"] },
             { key: "special", label: "特殊所見（選択式）", multi:true,
-              options: ["Positive remodeling","Spotty calcification","Napkin-ring sign","Low attenuation plaque",
-                        "Myocardial bridge(+)","モーションアーチファクトのため正確な内腔評価困難です。","血管径1.5mm以下のため正確な内腔評価困難です。"] }
+              options: [
+                "Positive remodeling",
+                "Spotty calcification",
+                "Napkin-ring sign",
+                "Low attenuation plaque",
+                "Myocardial bridge",
+                "Myocardial bridge(+)",
+                "モーションアーチファクトのため正確な内腔評価困難です。",
+                "血管径1.5mm以下のため正確な内腔評価困難です。"
+              ] }
           ]
         }]
       },
@@ -185,9 +193,9 @@
         sections: [{
           name:"CABG所見",
           fields:[
-            { key:"graft", label:"グラフト", options:["（選択）","LITA","RITA","SVG","GEA","RA"] },
-            { key:"patency", label:"開存状態", options:["（選択）","開存","狭窄","閉塞"] },
-            { key:"anast", label:"吻合部", options:["（選択）","良好","不良","評価困難"] },
+            { key:"graft", label:"グラフト", options:["", "LITA","RITA","SVG","GEA","RA"] },
+            { key:"patency", label:"開存状態", options:["", "開存","狭窄","閉塞"] },
+            { key:"anast", label:"吻合部", options:["", "良好","不良","評価困難"] },
             { key:"special", label:"特殊所見", multi:true, options:["金属クリップ影響","motion artifact","評価困難"] }
           ]
         }]
@@ -196,7 +204,7 @@
         template_id: "laa_pv_ct",
         meta: { title: "＜左心耳・肺静脈＞（担当技師：志賀）", score_label: "備考：" },
         sections:[{ name:"所見", fields:[
-          {key:"finding", label:"所見", options:["（選択）","左心耳血栓疑い","肺静脈狭窄疑い","異常所見なし"]},
+          {key:"finding", label:"所見", options:["", "左心耳血栓疑い","肺静脈狭窄疑い","異常所見なし"]},
           {key:"special", label:"特殊所見", multi:true, options:["追加所見なし"]}
         ]}]
       },
@@ -204,7 +212,7 @@
         template_id: "tavi",
         meta: { title: "＜TAVI計測＞（担当技師：志賀）", score_label: "備考：" },
         sections:[{ name:"TAVI", fields:[
-          {key:"finding", label:"所見", options:["（選択）","弁輪計測完了","石灰化強い","アクセス良好"]},
+          {key:"finding", label:"所見", options:["", "弁輪計測完了","石灰化強い","アクセス良好"]},
           {key:"special", label:"特殊所見", multi:true, options:["注意所見なし"]}
         ]}]
       }
@@ -227,7 +235,16 @@
         return fallbackObj;
       }
     }
-    function fillSelect(sel,opts){ sel.innerHTML=""; (opts||[]).forEach(o=>{const op=document.createElement("option");op.textContent=o;op.value=o;sel.appendChild(op);}); }
+    function fillSelect(sel,opts){
+      sel.innerHTML="";
+      (opts||[]).forEach((o,i)=>{
+        const op=document.createElement("option");
+        if(i===0 && o===""){ op.textContent="（未選択）"; op.value=""; }
+        else { op.textContent=o; op.value=o; }
+        sel.appendChild(op);
+      });
+      sel.value=""; // 初期は未選択
+    }
 
     // ===== テンプレ読み込み =====
     async function loadTemplateById(tid) {
@@ -241,7 +258,7 @@
       currentTemplate = await loadJson(filename, tplFallback);
 
       injectHeaderToOutput();
-      prepareLesionSections();     // ← 特殊所見チェック式をここで構築
+      prepareLesionSections();
       await loadDataById(tid);
       renderOutput();
 
@@ -284,9 +301,9 @@
       const plaqueSel   = document.getElementById("plaqueSel");
       const specialDiv  = document.getElementById("specialChecks");
 
-      const fA = sec.fields.find(f=>f.key==="artery")   || { options:["（選択）"] };
-      const fS = sec.fields.find(f=>f.key==="stenosis") || { options:["（選択）"] };
-      const fP = sec.fields.find(f=>f.key==="plaque")   || { options:["（選択）"] };
+      const fA = sec.fields.find(f=>f.key==="artery")   || { options:[""] };
+      const fS = sec.fields.find(f=>f.key==="stenosis") || { options:[""] };
+      const fP = sec.fields.find(f=>f.key==="plaque")   || { options:[""] };
       const fX = sec.fields.find(f=>f.key==="special")  || { options:[], multi:true };
 
       fillSelect(arterySel,   fA.options);
@@ -304,7 +321,7 @@
       toggleArteryFree();
 
       // ---- 特殊所見：選択式（初期未選択） ----
-      specialDiv.innerHTML = "";   // リセット
+      specialDiv.innerHTML = "";
       (fX.options || []).forEach(txt=>{
         const pill = document.createElement("button");
         pill.type = "button";
@@ -317,8 +334,6 @@
         };
         specialDiv.appendChild(pill);
       });
-
-      // 旧テキストエリアは廃止（選択式に一本化）
     }
 
     // 選択中の特殊所見（文字列配列）を取得
@@ -327,21 +342,43 @@
                   .map(el => el.textContent);
     }
 
-    // ===== 病変1行追加（半角スペース結合＋特殊所見は（…）） =====
+    // ===== 病変1行追加（括弧ルール：プラーク選択時のみ括弧） =====
     document.getElementById("addLineBtn").onclick = () => {
       const aSel = document.getElementById("arterySel");
       const aFree= document.getElementById("arteryFree");
       const sSel = document.getElementById("stenosisSel");
       const pSel = document.getElementById("plaqueSel");
 
-      const a = (aSel.value === "その他（手入力）" ? (aFree.value || "不明") : aSel.value || "");
-      const s = sSel.value || "";
-      const p = pSel.value || "";
-      const spArr = getSelectedSpecials();
-      const sp = spArr.length ? `（${spArr.join(", ")}）` : "";
+      // 枝は必須（手入力含む）
+      let artery = aSel.value;
+      if (artery === "その他（手入力）") artery = (aFree.value || "");
+      if (!artery) { alert("枝を選択（または手入力）してください"); return; }
 
-      const line = `${a}： ${s} ${p}${sp}`.trim();
-      if (line) outputLines.push(line);
+      const sten = (sSel.value || "");
+      const plaq = (pSel.value || "");
+      const spArr = getSelectedSpecials(); // 0個も可
+
+      let line = `${artery}：`;
+
+      // 狭窄率・プラークがあれば先に結合
+      const parts = [];
+      if (sten) parts.push(sten);
+      if (plaq) parts.push(plaq);
+      if (parts.length) line += ` ${parts.join(" ")}`;
+
+      // 特殊所見の括弧ルール
+      if (spArr.length) {
+        if (plaq) {
+          // プラークあり → （…）で括る
+          line += ` （${spArr.join(", ")}）`;
+        } else {
+          // プラークなし → 括らずそのまま
+          line += ` ${spArr.join(", ")}`;
+        }
+      }
+
+      line = line.trim();
+      outputLines.push(line);
       renderOutput();
     };
 
@@ -404,8 +441,11 @@
     document.getElementById("undoBtn").onclick  = () => { outputLines.pop(); renderOutput(); };
     document.getElementById("clearAllBtn").onclick = () => {
       injectHeaderToOutput(); document.getElementById("scoreInput").value = "";
-      // 特殊所見も念のため全解除
       document.getElementById("clearSpecialBtn").click();
+      ["arterySel","stenosisSel","plaqueSel"].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.value="";
+      });
+      document.getElementById("arteryFree").value="";
     };
 
     document.getElementById("scoreInput").oninput = (e) => {
